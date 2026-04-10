@@ -1,5 +1,6 @@
 const API_BASE_URL = window.__API_BASE_URL__ || 'https://dashboard-online-be.onrender.com';
 const TOKEN_KEY = 'app_access_token';
+const THEME_KEY = 'app_theme';
 
 const authCard = document.getElementById('auth-card');
 const welcomeCard = document.getElementById('welcome-card');
@@ -10,6 +11,7 @@ const logoutBtn = document.getElementById('logout-btn');
 const recordsBody = document.getElementById('records-body');
 const recordsMessage = document.getElementById('records-message');
 const addRecordForm = document.getElementById('add-record-form');
+const themeToggleBtn = document.getElementById('theme-toggle');
 
 let currentRegistros = [];
 
@@ -37,6 +39,22 @@ function setToken(value) {
   localStorage.setItem(TOKEN_KEY, value);
 }
 
+
+function applyTheme(theme) {
+  document.body.dataset.theme = theme;
+  localStorage.setItem(THEME_KEY, theme);
+  themeToggleBtn.textContent = theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro';
+}
+
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  applyTheme(saved || 'light');
+
+  themeToggleBtn.addEventListener('click', () => {
+    const nextTheme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(nextTheme);
+  });
+}
 async function api(path, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
@@ -196,4 +214,5 @@ logoutBtn.addEventListener('click', async () => {
   }
 });
 
+initTheme();
 checkSession();

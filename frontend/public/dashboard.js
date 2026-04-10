@@ -1,9 +1,11 @@
 const API_BASE_URL = window.__API_BASE_URL__ || 'https://dashboard-online-be.onrender.com';
 const TOKEN_KEY = 'app_access_token';
+const THEME_KEY = 'app_theme';
 
 const logoutBtn = document.getElementById('logout-btn');
 const printBtn = document.getElementById('print-btn');
 const clearFiltersBtn = document.getElementById('clear-filters-btn');
+const themeToggleBtn = document.getElementById('theme-toggle');
 const message = document.getElementById('dash-message');
 const subtitle = document.getElementById('dashboard-subtitle');
 const kpiGrid = document.getElementById('kpi-grid');
@@ -11,16 +13,16 @@ const kpiGrid = document.getElementById('kpi-grid');
 const money = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
 const palette = {
-  blue: '#4c78a8',
-  cyan: '#72b7b2',
-  green: '#54a24b',
-  orange: '#f58518',
-  red: '#e45756',
-  purple: '#b279a2',
-  yellow: '#eeca3b',
-  slate: '#8097b1',
-  teal: '#72b7b2',
-  rose: '#d37295'
+  blue: '#3b82f6',
+  cyan: '#22d3ee',
+  green: '#22c55e',
+  orange: '#f59e0b',
+  red: '#ef4444',
+  purple: '#a855f7',
+  yellow: '#eab308',
+  slate: '#64748b',
+  teal: '#0d9488',
+  rose: '#ec4899'
 };
 
 const monthNames = {
@@ -30,19 +32,7 @@ const monthNames = {
 
 const filterRefs = {
   anio: document.getElementById('filter-anio'),
-  mes: document.getElementById('filter-mes'),
-  ventasMin: document.getElementById('filter-ventas-min'),
-  ventasMax: document.getElementById('filter-ventas-max'),
-  cvMin: document.getElementById('filter-cv-min'),
-  cvMax: document.getElementById('filter-cv-max'),
-  cfMin: document.getElementById('filter-cf-min'),
-  cfMax: document.getElementById('filter-cf-max'),
-  ubMin: document.getElementById('filter-ub-min'),
-  ubMax: document.getElementById('filter-ub-max'),
-  unMin: document.getElementById('filter-un-min'),
-  unMax: document.getElementById('filter-un-max'),
-  mnMin: document.getElementById('filter-mn-min'),
-  mnMax: document.getElementById('filter-mn-max')
+  mes: document.getElementById('filter-mes')
 };
 
 const chartInstances = [];
@@ -64,6 +54,32 @@ function setToken(value) {
     return;
   }
   localStorage.setItem(TOKEN_KEY, value);
+}
+
+function getThemePalette() {
+  const css = getComputedStyle(document.body);
+  return {
+    muted: css.getPropertyValue('--muted').trim() || '#64748b',
+    border: css.getPropertyValue('--border').trim() || '#d6dee8'
+  };
+}
+
+function applyTheme(theme) {
+  document.body.dataset.theme = theme;
+  localStorage.setItem(THEME_KEY, theme);
+  themeToggleBtn.textContent = theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro';
+}
+
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  const theme = saved || 'light';
+  applyTheme(theme);
+
+  themeToggleBtn.addEventListener('click', () => {
+    const nextTheme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(nextTheme);
+    if (sourceRegistros.length) updateByFilters();
+  });
 }
 
 async function api(path, options = {}) {
@@ -104,32 +120,27 @@ function createKPI(title, value, accent = '') {
   return card;
 }
 
-function parseMaybeNumber(value) {
-  if (value === '' || value === null || value === undefined) return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 function axisFormatMoney(value) {
   return money.format(value);
 }
 
 function chartOptions(yAsPercent = false) {
+  const t = getThemePalette();
   return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: '#334155' } }
+      legend: { labels: { color: t.muted } }
     },
     scales: {
-      x: { ticks: { color: '#475569' }, grid: { color: '#e2e8f0' } },
+      x: { ticks: { color: t.muted }, grid: { color: t.border } },
       y: {
         beginAtZero: true,
         ticks: {
-          color: '#475569',
+          color: t.muted,
           callback: (value) => (yAsPercent ? `${value}%` : axisFormatMoney(value))
         },
-        grid: { color: '#e2e8f0' }
+        grid: { color: t.border }
       }
     }
   };
@@ -146,38 +157,14 @@ function readFilters() {
 
   return {
     anios: years.length ? years : null,
-    meses: months.length ? months : null,
-    ventasMin: parseMaybeNumber(filterRefs.ventasMin.value),
-    ventasMax: parseMaybeNumber(filterRefs.ventasMax.value),
-    cvMin: parseMaybeNumber(filterRefs.cvMin.value),
-    cvMax: parseMaybeNumber(filterRefs.cvMax.value),
-    cfMin: parseMaybeNumber(filterRefs.cfMin.value),
-    cfMax: parseMaybeNumber(filterRefs.cfMax.value),
-    ubMin: parseMaybeNumber(filterRefs.ubMin.value),
-    ubMax: parseMaybeNumber(filterRefs.ubMax.value),
-    unMin: parseMaybeNumber(filterRefs.unMin.value),
-    unMax: parseMaybeNumber(filterRefs.unMax.value),
-    mnMin: parseMaybeNumber(filterRefs.mnMin.value),
-    mnMax: parseMaybeNumber(filterRefs.mnMax.value)
+    meses: months.length ? months : null
   };
-}
-
-function inRange(value, min, max) {
-  if (min !== null && value < min) return false;
-  if (max !== null && value > max) return false;
-  return true;
 }
 
 function filterData(registros, f) {
   return registros.filter((r) => {
     if (f.anios !== null && !f.anios.includes(Number(r.anio))) return false;
     if (f.meses !== null && !f.meses.includes(Number(r.mes))) return false;
-    if (!inRange(Number(r.ventas), f.ventasMin, f.ventasMax)) return false;
-    if (!inRange(Number(r.costo_variable), f.cvMin, f.cvMax)) return false;
-    if (!inRange(Number(r.costo_fijo), f.cfMin, f.cfMax)) return false;
-    if (!inRange(Number(r.utilidad_bruta), f.ubMin, f.ubMax)) return false;
-    if (!inRange(Number(r.utilidad_neta), f.unMin, f.unMax)) return false;
-    if (!inRange(Number(r.margen_neto), f.mnMin, f.mnMax)) return false;
     return true;
   });
 }
@@ -185,6 +172,7 @@ function filterData(registros, f) {
 function renderDashboard(registros) {
   destroyCharts();
 
+  const t = getThemePalette();
   const data = toSortedRegistros(registros);
   const labels = data.map(periodLabel);
 
@@ -211,13 +199,13 @@ function renderDashboard(registros) {
 
   chartInstances.push(new Chart(document.getElementById('chart-ventas'), {
     type: 'line',
-    data: { labels, datasets: [{ label: 'Ventas', data: data.map((r) => r.ventas), borderColor: palette.blue, backgroundColor: 'rgba(76,120,168,0.2)', fill: true, tension: 0.35 }] },
+    data: { labels, datasets: [{ label: 'Ventas', data: data.map((r) => r.ventas), borderColor: palette.blue, backgroundColor: 'rgba(59,130,246,0.2)', fill: true, tension: 0.35 }] },
     options: chartOptions(false)
   }));
 
   chartInstances.push(new Chart(document.getElementById('chart-utilidad-neta'), {
     type: 'line',
-    data: { labels, datasets: [{ label: 'Utilidad neta', data: data.map((r) => r.utilidad_neta), borderColor: palette.green, backgroundColor: 'rgba(84,162,75,0.2)', fill: true, tension: 0.3 }] },
+    data: { labels, datasets: [{ label: 'Utilidad neta', data: data.map((r) => r.utilidad_neta), borderColor: palette.green, backgroundColor: 'rgba(34,197,94,0.2)', fill: true, tension: 0.3 }] },
     options: chartOptions(false)
   }));
 
@@ -252,7 +240,7 @@ function renderDashboard(registros) {
       labels: ['Costo variable total', 'Costo fijo total', 'Utilidad neta total'],
       datasets: [{ data: [totalCostoVar, totalCostoFijo, totalUtilidad], backgroundColor: [palette.orange, palette.red, palette.green] }]
     },
-    options: { responsive: true, maintainAspectRatio: true, aspectRatio: 1, plugins: { legend: { labels: { color: '#334155' } } } }
+    options: { responsive: true, maintainAspectRatio: true, aspectRatio: 1, plugins: { legend: { labels: { color: t.muted } } } }
   }));
 
   chartInstances.push(new Chart(document.getElementById('chart-scatter'), {
@@ -263,15 +251,15 @@ function renderDashboard(registros) {
     options: {
       ...chartOptions(false),
       scales: {
-        x: { beginAtZero: true, ticks: { color: '#475569', callback: (value) => axisFormatMoney(value) }, grid: { color: '#e2e8f0' } },
-        y: { beginAtZero: true, ticks: { color: '#475569', callback: (value) => axisFormatMoney(value) }, grid: { color: '#e2e8f0' } }
+        x: { beginAtZero: true, ticks: { color: t.muted, callback: (value) => axisFormatMoney(value) }, grid: { color: t.border } },
+        y: { beginAtZero: true, ticks: { color: t.muted, callback: (value) => axisFormatMoney(value) }, grid: { color: t.border } }
       }
     }
   }));
 
   chartInstances.push(new Chart(document.getElementById('chart-margen'), {
     type: 'line',
-    data: { labels, datasets: [{ label: 'Margen neto %', data: data.map((r) => r.margen_neto), borderColor: palette.yellow, backgroundColor: 'rgba(238,202,59,0.2)', fill: true }] },
+    data: { labels, datasets: [{ label: 'Margen neto %', data: data.map((r) => r.margen_neto), borderColor: palette.yellow, backgroundColor: 'rgba(234,179,8,0.2)', fill: true }] },
     options: chartOptions(true)
   }));
 
@@ -290,10 +278,10 @@ function renderDashboard(registros) {
           margenPromedio
         ],
         borderColor: palette.rose,
-        backgroundColor: 'rgba(211,114,149,0.2)'
+        backgroundColor: 'rgba(236,72,153,0.2)'
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false, scales: { r: { beginAtZero: true, grid: { color: '#dbe4ef' }, pointLabels: { color: '#334155' }, ticks: { color: '#64748b', backdropColor: 'transparent' } } }, plugins: { legend: { labels: { color: '#334155' } } } }
+    options: { responsive: true, maintainAspectRatio: false, scales: { r: { beginAtZero: true, grid: { color: t.border }, pointLabels: { color: t.muted }, ticks: { color: t.muted, backdropColor: 'transparent' } } }, plugins: { legend: { labels: { color: t.muted } } } }
   }));
 
   chartInstances.push(new Chart(document.getElementById('chart-top'), {
@@ -312,7 +300,7 @@ function renderDashboard(registros) {
         backgroundColor: [palette.blue, palette.purple, palette.green, palette.yellow, palette.red, palette.teal]
       }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#334155' } } }, scales: { r: { beginAtZero: true, grid: { color: '#dbe4ef' }, ticks: { color: '#64748b', backdropColor: 'transparent' } } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: t.muted } } }, scales: { r: { beginAtZero: true, grid: { color: t.border }, ticks: { color: t.muted, backdropColor: 'transparent' } } } }
   }));
 }
 
@@ -343,7 +331,7 @@ function updateByFilters() {
   if (!filtered.length) {
     destroyCharts();
     kpiGrid.innerHTML = '';
-    setMessage('No hay datos para los filtros seleccionados. Ajusta los rangos e intenta nuevamente.', true);
+    setMessage('No hay datos para los filtros seleccionados. Ajusta año o mes e intenta nuevamente.', true);
     return;
   }
 
@@ -352,19 +340,17 @@ function updateByFilters() {
 }
 
 function clearFilters() {
-  Object.entries(filterRefs).forEach(([key, el]) => {
-    if (key === 'anio' || key === 'mes') {
-      [...el.options].forEach((option) => {
-        option.selected = false;
-      });
-      return;
-    }
-    el.value = '';
+  Object.values(filterRefs).forEach((el) => {
+    [...el.options].forEach((option) => {
+      option.selected = false;
+    });
   });
   updateByFilters();
 }
 
 async function init() {
+  initTheme();
+
   if (!token()) {
     window.location.href = '/index.html';
     return;
@@ -403,9 +389,8 @@ logoutBtn.addEventListener('click', async () => {
   }
 });
 
-Object.entries(filterRefs).forEach(([key, el]) => {
-  const eventType = key === 'anio' || key === 'mes' ? 'change' : 'input';
-  el.addEventListener(eventType, updateByFilters);
+Object.values(filterRefs).forEach((el) => {
+  el.addEventListener('change', updateByFilters);
 });
 clearFiltersBtn.addEventListener('click', clearFilters);
 printBtn.addEventListener('click', () => window.print());
