@@ -49,7 +49,7 @@ app.use(cors({
 
     return callback(new Error(`Origen no permitido por CORS: ${origin}`));
   },
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'PUT'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
@@ -79,12 +79,14 @@ function verifyPassword(password, storedHash = '') {
   return timingSafeEqual(recalculated, storedHash);
 }
 
-function createSession(email) {
+function createSession(user) {
   const accessToken = crypto.randomBytes(48).toString('hex');
   const expiresAt = Date.now() + TOKEN_TTL_SECONDS * 1000;
 
   sessions.set(accessToken, {
-    email,
+    email: user.email,
+    empresaId: user.empresaId,
+    empresaNombre: user.empresaNombre,
     expiresAt
   });
 
@@ -92,7 +94,9 @@ function createSession(email) {
     access_token: accessToken,
     expires_in: TOKEN_TTL_SECONDS,
     user: {
-      email
+      email: user.email,
+      empresa_id: user.empresaId,
+      empresa_nombre: user.empresaNombre
     }
   };
 }
@@ -130,6 +134,54 @@ async function requireAuth(req, res, next) {
   return next();
 }
 
+async function getUserByEmail(email) {
+  return supabase
+    .from('usuarios')
+    .select('correo,password,empresa_id,empresas:empresa_id(id,nombre)')
+    .eq('correo', email.toLowerCase())
+    .maybeSingle();
+}
+
+function normalizeRegistroPayload(payload) {
+  const anio = Number(payload.anio);
+  const mes = Number(payload.mes);
+  const ventas = Number(payload.ventas);
+  const costoVariable = Number(payload.costo_variable);
+  const utilidadBruta = Number(payload.utilidad_bruta);
+  const costoFijo = Number(payload.costo_fijo);
+  const utilidadNeta = Number(payload.utilidad_neta);
+  const margenNeto = Number(payload.margen_neto);
+
+  return {
+    anio,
+    mes,
+    ventas,
+    costo_variable: costoVariable,
+    utilidad_bruta: utilidadBruta,
+    costo_fijo: costoFijo,
+    utilidad_neta: utilidadNeta,
+    margen_neto: margenNeto
+  };
+}
+
+function validateRegistroPayload(payload) {
+  const required = ['anio', 'mes', 'ventas', 'costo_variable', 'utilidad_bruta', 'costo_fijo', 'utilidad_neta', 'margen_neto'];
+  for (const key of required) {
+    if (!Number.isFinite(payload[key])) {
+      return `${key} debe ser numérico`;
+    }
+  }
+
+  if (payload.anio < 2000 || payload.anio > 2100) {
+    return 'anio debe estar entre 2000 y 2100';
+  }
+  if (payload.mes < 1 || payload.mes > 12) {
+    return 'mes debe estar entre 1 y 12';
+  }
+
+  return null;
+}
+
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
@@ -141,11 +193,7 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ error: 'Email y password son obligatorios' });
   }
 
-  const { data: user, error } = await supabase
-    .from('usuarios')
-    .select('correo,password')
-    .eq('correo', email.toLowerCase())
-    .maybeSingle();
+  const { data: user, error } = await getUserByEmail(email);
 
   if (error) {
     return res.status(500).json({ error: 'No se pudo validar el usuario' });
@@ -155,15 +203,117 @@ app.post('/api/login', async (req, res) => {
     return res.status(401).json({ error: 'Credenciales inválidas. Verifica correo y contraseña.' });
   }
 
-  return res.json(createSession(user.correo));
+  return res.json(createSession({
+    email: user.correo,
+    empresaId: user.empresa_id,
+    empresaNombre: user.empresas?.nombre || null
+  }));
 });
 
 app.get('/api/me', requireAuth, (req, res) => {
   return res.json({
     user: {
-      email: req.auth.session.email
+      email: req.auth.session.email,
+      empresa_id: req.auth.session.empresaId,
+      empresa_nombre: req.auth.session.empresaNombre
     }
   });
+});
+
+app.get('/api/registros-base', requireAuth, async (req, res) => {
+  const empresaId = req.auth.session.empresaId;
+
+  if (!empresaId) {
+    return res.status(400).json({ error: 'El usuario no tiene una empresa asociada' });
+  }
+
+  const { data, error } = await supabase
+    .from('registros_base')
+    .select('id,empresa_id,anio,mes,ventas,costo_variable,utilidad_bruta,costo_fijo,utilidad_neta,margen_neto,updated_at')
+    .eq('empresa_id', empresaId)
+    .order('anio', { ascending: false })
+    .order('mes', { ascending: false });
+
+  if (error) {
+    return res.status(500).json({ error: 'No se pudieron consultar los registros' });
+  }
+
+  return res.json({
+    empresa: {
+      id: req.auth.session.empresaId,
+      nombre: req.auth.session.empresaNombre
+    },
+    registros: data || []
+  });
+});
+
+app.post('/api/registros-base', requireAuth, async (req, res) => {
+  const empresaId = req.auth.session.empresaId;
+
+  if (!empresaId) {
+    return res.status(400).json({ error: 'El usuario no tiene una empresa asociada' });
+  }
+
+  const payload = normalizeRegistroPayload(req.body || {});
+  const validationError = validateRegistroPayload(payload);
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
+  }
+
+  const { data, error } = await supabase
+    .from('registros_base')
+    .insert({ empresa_id: empresaId, ...payload })
+    .select('id,empresa_id,anio,mes,ventas,costo_variable,utilidad_bruta,costo_fijo,utilidad_neta,margen_neto,updated_at')
+    .single();
+
+  if (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Ya existe un registro para ese año y mes en tu empresa' });
+    }
+    return res.status(500).json({ error: 'No se pudo crear el registro' });
+  }
+
+  return res.status(201).json({ registro: data });
+});
+
+app.put('/api/registros-base/:id', requireAuth, async (req, res) => {
+  const empresaId = req.auth.session.empresaId;
+  const id = Number(req.params.id);
+
+  if (!empresaId) {
+    return res.status(400).json({ error: 'El usuario no tiene una empresa asociada' });
+  }
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: 'El id del registro es inválido' });
+  }
+
+  const payload = normalizeRegistroPayload(req.body || {});
+  const validationError = validateRegistroPayload(payload);
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
+  }
+
+  const { data, error } = await supabase
+    .from('registros_base')
+    .update(payload)
+    .eq('id', id)
+    .eq('empresa_id', empresaId)
+    .select('id,empresa_id,anio,mes,ventas,costo_variable,utilidad_bruta,costo_fijo,utilidad_neta,margen_neto,updated_at')
+    .maybeSingle();
+
+  if (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Ya existe otro registro con ese año y mes en tu empresa' });
+    }
+    return res.status(500).json({ error: 'No se pudo actualizar el registro' });
+  }
+
+  if (!data) {
+    return res.status(404).json({ error: 'Registro no encontrado para tu empresa' });
+  }
+
+  return res.json({ registro: data });
 });
 
 app.post('/api/logout', requireAuth, (req, res) => {

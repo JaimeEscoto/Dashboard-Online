@@ -24,15 +24,23 @@ body {
 
 .card {
   width: 100%;
-  max-width: 460px;
+  max-width: 1100px;
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
   padding: 28px;
 }
 
+#auth-card {
+  max-width: 460px;
+}
+
 h1 {
   margin: 0 0 8px;
+}
+
+h2 {
+  margin-top: 24px;
 }
 
 .muted {
@@ -47,6 +55,17 @@ h1 {
   margin-top: 20px;
 }
 
+.grid-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.grid-form button {
+  grid-column: span 4;
+}
+
 label {
   font-weight: 600;
   font-size: 0.95rem;
@@ -55,8 +74,8 @@ label {
 input {
   border: 1px solid #cbd5e1;
   border-radius: 10px;
-  padding: 12px;
-  font-size: 1rem;
+  padding: 10px;
+  font-size: 0.95rem;
 }
 
 button {
@@ -74,11 +93,34 @@ button:hover {
   filter: brightness(1.06);
 }
 
-.link-btn {
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
   margin-top: 12px;
-  background: transparent;
-  color: #2563eb;
-  padding-inline: 0;
+}
+
+th,
+td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+td input {
+  width: 100%;
+  min-width: 90px;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
 }
 
 .message {
