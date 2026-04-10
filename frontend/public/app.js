@@ -1,18 +1,12 @@
 const API_BASE_URL = window.__API_BASE_URL__ || 'https://dashboard-online-be.onrender.com';
-const TOKEN_KEY = 'sb_access_token';
+const TOKEN_KEY = 'app_access_token';
 
 const authCard = document.getElementById('auth-card');
 const welcomeCard = document.getElementById('welcome-card');
-const authTitle = document.getElementById('auth-title');
-const authSubtitle = document.getElementById('auth-subtitle');
-const toggleModeBtn = document.getElementById('toggle-mode');
 const authForm = document.getElementById('auth-form');
 const message = document.getElementById('message');
 const welcomeText = document.getElementById('welcome-text');
 const logoutBtn = document.getElementById('logout-btn');
-const submitBtn = document.getElementById('submit-btn');
-
-let mode = 'login';
 
 function setMessage(text, isError = false) {
   message.textContent = text;
@@ -30,22 +24,6 @@ function setToken(value) {
     return;
   }
   localStorage.setItem(TOKEN_KEY, value);
-}
-
-function setMode(nextMode) {
-  mode = nextMode;
-  if (mode === 'login') {
-    authTitle.textContent = 'Iniciar sesión';
-    authSubtitle.textContent = 'Accede a tu portal.';
-    submitBtn.textContent = 'Entrar';
-    toggleModeBtn.textContent = '¿No tienes cuenta? Regístrate';
-  } else {
-    authTitle.textContent = 'Crear cuenta';
-    authSubtitle.textContent = 'Regístrate para empezar.';
-    submitBtn.textContent = 'Registrarme';
-    toggleModeBtn.textContent = '¿Ya tienes cuenta? Inicia sesión';
-  }
-  setMessage('');
 }
 
 async function api(path, options = {}) {
@@ -110,31 +88,18 @@ authForm.addEventListener('submit', async (event) => {
   const password = formData.get('password');
 
   try {
-    if (mode === 'login') {
-      const data = await api('/api/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password })
-      });
-      setToken(data.access_token);
-      showWelcome(data.user);
-      setMessage('');
-      authForm.reset();
-    } else {
-      const data = await api('/api/register', {
-        method: 'POST',
-        body: JSON.stringify({ email, password })
-      });
-      setMessage(data.message, false);
-      setMode('login');
-      authForm.reset();
-    }
+    const data = await api('/api/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+
+    setToken(data.access_token);
+    showWelcome(data.user);
+    setMessage('');
+    authForm.reset();
   } catch (error) {
     setMessage(error.message, true);
   }
-});
-
-toggleModeBtn.addEventListener('click', () => {
-  setMode(mode === 'login' ? 'register' : 'login');
 });
 
 logoutBtn.addEventListener('click', async () => {
@@ -143,9 +108,7 @@ logoutBtn.addEventListener('click', async () => {
   } finally {
     setToken(null);
     showAuth();
-    setMode('login');
   }
 });
 
-setMode('login');
 checkSession();

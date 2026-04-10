@@ -2,7 +2,7 @@
 
 Proyecto dividido en dos servicios para publicarlo fácilmente en Render:
 
-- `backend/`: API con Node.js + Express + Supabase Auth.
+- `backend/`: API con Node.js + Express + tabla `public.usuarios` en Supabase.
 - `frontend/`: cliente web (HTML/CSS/JS) servido por Express.
 
 ## Estructura
@@ -12,6 +12,7 @@ Proyecto dividido en dos servicios para publicarlo fácilmente en Render:
 ├── backend/
 │   ├── src/server.js
 │   ├── package.json
+│   ├── sql/supabase_login_setup.sql
 │   └── .env.example
 ├── frontend/
 │   ├── public/
@@ -31,25 +32,20 @@ Proyecto dividido en dos servicios para publicarlo fácilmente en Render:
 Crea `backend/.env` basado en `backend/.env.example`:
 
 - `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (recomendado)
+- `SUPABASE_ANON_KEY` (solo fallback)
 - `PORT` (por defecto `3000`)
 - `FRONTEND_ORIGIN` (por defecto `http://localhost:5173`)
 
+### Crear tabla y usuario inicial
 
-### Usuario inicial y script SQL
+En `backend/sql/supabase_login_setup.sql` tienes el SQL para:
 
-En `backend/sql/seed_users.sql` tienes un script para crear/actualizar usuarios de Supabase Auth.
-
-También tienes `backend/sql/supabase_login_setup.sql` con una plantilla para crear/actualizar un usuario con contraseña hasheada (bcrypt).
-
-Incluye por defecto:
-
-- email: `araujo@a.com`
-- password: `araujo123`
-
-También se agregó un mini manual de despliegue y conexión Render + Supabase en:
-
-- `backend/MINIMANUAL_RENDER_SUPABASE.md`
+- borrar usuarios previos de este flujo (`drop table if exists public.usuarios`)
+- crear tabla `public.usuarios(correo, password)`
+- insertar usuario genérico:
+  - correo: `admin@dashboard.com`
+  - password: `Admin12345!`
 
 ### Ejecutar backend
 
@@ -62,7 +58,6 @@ API disponible en `http://localhost:3000`.
 
 Endpoints:
 
-- `POST /api/register`
 - `POST /api/login`
 - `GET /api/me` (Bearer token)
 - `POST /api/logout`
@@ -88,20 +83,3 @@ npm run dev --prefix frontend
 ```
 
 Frontend en `http://localhost:5173`.
-
-## 3) Deploy en Render
-
-### Servicio Backend (Web Service)
-
-- Root Directory: `backend`
-- Build Command: `npm install`
-- Start Command: `npm start`
-- Env vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `FRONTEND_ORIGIN`
-
-### Servicio Frontend (Web Service)
-
-- Root Directory: `frontend`
-- Build Command: `npm install`
-- Start Command: `npm start`
-
-Luego define `API_BASE_URL` en `frontend/.env` con la URL pública del backend en Render.
