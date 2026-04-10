@@ -1,87 +1,21 @@
 -- =========================================================
--- Setup para login con contraseña encriptada (Supabase Auth)
--- Ejecuta este script en el SQL Editor de Supabase.
+-- Setup de login con tabla propia: public.usuarios
+-- Ejecuta este script en Supabase SQL Editor.
 -- =========================================================
 
-create extension if not exists pgcrypto;
+-- Limpia usuarios previos de este flujo.
+drop table if exists public.usuarios;
 
--- Crea/actualiza un usuario con password hasheado usando bcrypt (bf).
--- Cambia el email y contraseña por los tuyos antes de ejecutar.
-with new_user as (
-  insert into auth.users (
-    instance_id,
-    id,
-    aud,
-    role,
-    email,
-    encrypted_password,
-    email_confirmed_at,
-    invited_at,
-    confirmation_token,
-    confirmation_sent_at,
-    recovery_token,
-    recovery_sent_at,
-    email_change_token_new,
-    email_change,
-    created_at,
-    updated_at,
-    raw_app_meta_data,
-    raw_user_meta_data,
-    is_super_admin,
-    confirmed_at
-  )
-  values (
-    '00000000-0000-0000-0000-000000000000',
-    gen_random_uuid(),
-    'authenticated',
-    'authenticated',
-    'admin@dashboard.com',
-    crypt('CambiaEstaPassword123!', gen_salt('bf')),
-    now(),
-    null,
-    '',
-    null,
-    '',
-    null,
-    '',
-    '',
-    now(),
-    now(),
-    '{"provider":"email","providers":["email"]}'::jsonb,
-    '{}'::jsonb,
-    false,
-    now()
-  )
-  on conflict (email) do update
-    set encrypted_password = excluded.encrypted_password,
-        email_confirmed_at = now(),
-        confirmed_at = now(),
-        updated_at = now()
-  returning id, email
-)
-insert into auth.identities (
-  id,
-  user_id,
-  identity_data,
-  provider,
-  provider_id,
-  created_at,
-  updated_at,
-  last_sign_in_at
-)
-select
-  gen_random_uuid(),
-  nu.id,
-  jsonb_build_object('sub', nu.id::text, 'email', nu.email),
-  'email',
-  nu.email,
-  now(),
-  now(),
-  now()
-from new_user nu
-where not exists (
-  select 1
-  from auth.identities i
-  where i.provider = 'email'
-    and i.provider_id = nu.email
+create table public.usuarios (
+  correo text primary key,
+  password text not null
+);
+
+-- Usuario genérico inicial
+-- correo: admin@dashboard.com
+-- password: Admin12345!
+insert into public.usuarios (correo, password)
+values (
+  'admin@dashboard.com',
+  'pbkdf2$120000$b890e1cf3ddf36ef0dc8b212ec4246f8$3b0dc914c41ef7fd37600f8c28bdc162b4a0e56a03ca705bbd532121dd3e3af080575ccb214d424f8b62cfe6dab476e2a573bb5da4f122c8c250fad5b5a90f50'
 );
