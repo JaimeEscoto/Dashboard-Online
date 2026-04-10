@@ -25,10 +25,64 @@
         <p id="message" class="message"></p>
       </section>
 
-      <section id="welcome-card" class="card hidden">
-        <h1>Bienvenido</h1>
-        <p id="welcome-text" class="muted"></p>
-        <button id="logout-btn" type="button">Cerrar sesión</button>
+      <section id="welcome-card" class="card hidden dashboard-card">
+        <div class="header-row">
+          <div>
+            <h1>Bienvenido</h1>
+            <p id="welcome-text" class="muted"></p>
+          </div>
+          <button id="logout-btn" type="button">Cerrar sesión</button>
+        </div>
+
+        <h2>Registros de la empresa</h2>
+        <p id="records-message" class="message"></p>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Año</th>
+                <th>Mes</th>
+                <th>Ventas</th>
+                <th>Costo variable</th>
+                <th>Utilidad bruta</th>
+                <th>Costo fijo</th>
+                <th>Utilidad neta</th>
+                <th>Margen neto %</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="records-body"></tbody>
+          </table>
+        </div>
+
+        <h2>Agregar nuevo registro</h2>
+        <form id="add-record-form" class="form grid-form">
+          <label for="new-anio">Año</label>
+          <input id="new-anio" name="anio" type="number" min="2000" max="2100" required />
+
+          <label for="new-mes">Mes</label>
+          <input id="new-mes" name="mes" type="number" min="1" max="12" required />
+
+          <label for="new-ventas">Ventas</label>
+          <input id="new-ventas" name="ventas" type="number" min="0" step="0.01" required />
+
+          <label for="new-costo-variable">Costo variable</label>
+          <input id="new-costo-variable" name="costo_variable" type="number" min="0" step="0.01" required />
+
+          <label for="new-utilidad-bruta">Utilidad bruta</label>
+          <input id="new-utilidad-bruta" name="utilidad_bruta" type="number" min="0" step="0.01" required />
+
+          <label for="new-costo-fijo">Costo fijo</label>
+          <input id="new-costo-fijo" name="costo_fijo" type="number" min="0" step="0.01" required />
+
+          <label for="new-utilidad-neta">Utilidad neta</label>
+          <input id="new-utilidad-neta" name="utilidad_neta" type="number" step="0.01" required />
+
+          <label for="new-margen-neto">Margen neto %</label>
+          <input id="new-margen-neto" name="margen_neto" type="number" min="0" max="100" step="0.01" required />
+
+          <button type="submit">Agregar registro</button>
+        </form>
       </section>
     </main>
 
