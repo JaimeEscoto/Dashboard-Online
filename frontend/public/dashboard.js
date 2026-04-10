@@ -7,6 +7,8 @@ const clearFiltersBtn = document.getElementById('clear-filters-btn');
 const message = document.getElementById('dash-message');
 const subtitle = document.getElementById('dashboard-subtitle');
 const kpiGrid = document.getElementById('kpi-grid');
+const recordsBody = document.getElementById('records-body');
+const recordsMessage = document.getElementById('records-message');
 
 const money = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
@@ -52,6 +54,12 @@ function setMessage(text, isError = false) {
   message.textContent = text;
   message.classList.toggle('error', isError);
   message.classList.toggle('success', !isError && !!text);
+}
+
+function setRecordsMessage(text, isError = false) {
+  recordsMessage.textContent = text;
+  recordsMessage.classList.toggle('error', isError);
+  recordsMessage.classList.toggle('success', !isError && !!text);
 }
 
 function token() {
@@ -141,9 +149,12 @@ function destroyCharts() {
 }
 
 function readFilters() {
+  const years = [...filterRefs.anio.selectedOptions].map((option) => Number(option.value));
+  const months = [...filterRefs.mes.selectedOptions].map((option) => Number(option.value));
+
   return {
-    anio: filterRefs.anio.value ? Number(filterRefs.anio.value) : null,
-    mes: filterRefs.mes.value ? Number(filterRefs.mes.value) : null,
+    anios: years.length ? years : null,
+    meses: months.length ? months : null,
     ventasMin: parseMaybeNumber(filterRefs.ventasMin.value),
     ventasMax: parseMaybeNumber(filterRefs.ventasMax.value),
     cvMin: parseMaybeNumber(filterRefs.cvMin.value),
@@ -167,8 +178,8 @@ function inRange(value, min, max) {
 
 function filterData(registros, f) {
   return registros.filter((r) => {
-    if (f.anio !== null && Number(r.anio) !== f.anio) return false;
-    if (f.mes !== null && Number(r.mes) !== f.mes) return false;
+    if (f.anios !== null && !f.anios.includes(Number(r.anio))) return false;
+    if (f.meses !== null && !f.meses.includes(Number(r.mes))) return false;
     if (!inRange(Number(r.ventas), f.ventasMin, f.ventasMax)) return false;
     if (!inRange(Number(r.costo_variable), f.cvMin, f.cvMax)) return false;
     if (!inRange(Number(r.costo_fijo), f.cfMin, f.cfMax)) return false;
@@ -249,7 +260,7 @@ function renderDashboard(registros) {
       labels: ['Costo variable total', 'Costo fijo total', 'Utilidad neta total'],
       datasets: [{ data: [totalCostoVar, totalCostoFijo, totalUtilidad], backgroundColor: [palette.orange, palette.red, palette.green] }]
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#334155' } } } }
+    options: { responsive: true, maintainAspectRatio: true, aspectRatio: 1, plugins: { legend: { labels: { color: '#334155' } } } }
   }));
 
   chartInstances.push(new Chart(document.getElementById('chart-scatter'), {
@@ -313,11 +324,61 @@ function renderDashboard(registros) {
   }));
 }
 
+function toMoney(value) {
+  return Number(value).toFixed(2);
+}
+
+function renderRegistros(registros) {
+  recordsBody.innerHTML = '';
+  if (!registros.length) {
+    recordsBody.innerHTML = '<tr><td colspan="9">No hay registros para los filtros seleccionados.</td></tr>';
+    return;
+  }
+
+  registros.forEach((registro) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><input type="number" min="2000" max="2100" value="${registro.anio}" data-field="anio"></td>
+      <td><input type="number" min="1" max="12" value="${registro.mes}" data-field="mes"></td>
+      <td><input type="number" min="0" step="0.01" value="${toMoney(registro.ventas)}" data-field="ventas"></td>
+      <td><input type="number" min="0" step="0.01" value="${toMoney(registro.costo_variable)}" data-field="costo_variable"></td>
+      <td><input type="number" min="0" step="0.01" value="${toMoney(registro.utilidad_bruta)}" data-field="utilidad_bruta"></td>
+      <td><input type="number" min="0" step="0.01" value="${toMoney(registro.costo_fijo)}" data-field="costo_fijo"></td>
+      <td><input type="number" step="0.01" value="${toMoney(registro.utilidad_neta)}" data-field="utilidad_neta"></td>
+      <td><input type="number" min="0" max="100" step="0.01" value="${toMoney(registro.margen_neto)}" data-field="margen_neto"></td>
+      <td><button type="button" data-action="save">Guardar</button></td>
+    `;
+
+    row.querySelector('[data-action="save"]').addEventListener('click', async () => {
+      const body = {};
+      row.querySelectorAll('input').forEach((input) => {
+        body[input.dataset.field] = Number(input.value);
+      });
+
+      try {
+        await api(`/api/registros-base/${registro.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(body)
+        });
+        setRecordsMessage('Registro actualizado correctamente.');
+        const response = await api('/api/registros-base', { method: 'GET' });
+        sourceRegistros = response.registros || [];
+        populateFilterSelectors(sourceRegistros);
+        updateByFilters();
+      } catch (error) {
+        setRecordsMessage(error.message || 'No se pudo actualizar el registro.', true);
+      }
+    });
+
+    recordsBody.appendChild(row);
+  });
+}
+
 function populateFilterSelectors(registros) {
   const years = [...new Set(registros.map((r) => Number(r.anio)))].sort((a, b) => a - b);
   const months = [...new Set(registros.map((r) => Number(r.mes)))].sort((a, b) => a - b);
 
-  filterRefs.anio.innerHTML = '<option value="">Todos</option>';
+  filterRefs.anio.innerHTML = '';
   years.forEach((year) => {
     const option = document.createElement('option');
     option.value = String(year);
@@ -325,7 +386,7 @@ function populateFilterSelectors(registros) {
     filterRefs.anio.appendChild(option);
   });
 
-  filterRefs.mes.innerHTML = '<option value="">Todos</option>';
+  filterRefs.mes.innerHTML = '';
   months.forEach((month) => {
     const option = document.createElement('option');
     option.value = String(month);
@@ -336,6 +397,8 @@ function populateFilterSelectors(registros) {
 
 function updateByFilters() {
   const filtered = filterData(sourceRegistros, readFilters());
+  renderRegistros(filtered);
+
   if (!filtered.length) {
     destroyCharts();
     kpiGrid.innerHTML = '';
@@ -348,9 +411,16 @@ function updateByFilters() {
 }
 
 function clearFilters() {
-  Object.values(filterRefs).forEach((el) => {
+  Object.entries(filterRefs).forEach(([key, el]) => {
+    if (key === 'anio' || key === 'mes') {
+      [...el.options].forEach((option) => {
+        option.selected = false;
+      });
+      return;
+    }
     el.value = '';
   });
+  setRecordsMessage('');
   updateByFilters();
 }
 
@@ -393,7 +463,10 @@ logoutBtn.addEventListener('click', async () => {
   }
 });
 
-Object.values(filterRefs).forEach((el) => el.addEventListener('input', updateByFilters));
+Object.entries(filterRefs).forEach(([key, el]) => {
+  const eventType = key === 'anio' || key === 'mes' ? 'change' : 'input';
+  el.addEventListener(eventType, updateByFilters);
+});
 clearFiltersBtn.addEventListener('click', clearFilters);
 printBtn.addEventListener('click', () => window.print());
 
