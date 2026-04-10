@@ -35,6 +35,20 @@ Crea `backend/.env` basado en `backend/.env.example`:
 - `PORT` (por defecto `3000`)
 - `FRONTEND_ORIGIN` (por defecto `http://localhost:5173`)
 
+
+### Usuario inicial y script SQL
+
+En `backend/sql/seed_users.sql` tienes un script para crear/actualizar usuarios de Supabase Auth.
+
+Incluye por defecto:
+
+- email: `araujo@a.com`
+- password: `araujo123`
+
+También se agregó un mini manual de despliegue y conexión Render + Supabase en:
+
+- `backend/MINIMANUAL_RENDER_SUPABASE.md`
+
 ### Ejecutar backend
 
 ```bash
