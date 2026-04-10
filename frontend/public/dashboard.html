@@ -26,10 +26,10 @@
           <h2>Filtros</h2>
           <div class="filters-grid">
             <label>Año
-              <select id="filter-anio"><option value="">Todos</option></select>
+              <select id="filter-anio" multiple size="4"></select>
             </label>
             <label>Mes
-              <select id="filter-mes"><option value="">Todos</option></select>
+              <select id="filter-mes" multiple size="6"></select>
             </label>
             <label>Ventas mín.
               <input id="filter-ventas-min" type="number" step="0.01" placeholder="Ej. 1000" />
@@ -77,12 +77,35 @@
 
         <section id="kpi-grid" class="kpi-grid"></section>
 
+        <section>
+          <h2>Registros (modo hoja de cálculo)</h2>
+          <p id="records-message" class="message"></p>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Año</th>
+                  <th>Mes</th>
+                  <th>Ventas</th>
+                  <th>Costo variable</th>
+                  <th>Utilidad bruta</th>
+                  <th>Costo fijo</th>
+                  <th>Utilidad neta</th>
+                  <th>Margen neto %</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="records-body"></tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="charts-grid">
           <article class="chart-card"><h3>1. Tendencia de ventas</h3><canvas id="chart-ventas"></canvas></article>
           <article class="chart-card"><h3>2. Tendencia de utilidad neta</h3><canvas id="chart-utilidad-neta"></canvas></article>
           <article class="chart-card"><h3>3. Ventas vs costos</h3><canvas id="chart-costos"></canvas></article>
           <article class="chart-card"><h3>4. Utilidad bruta vs neta</h3><canvas id="chart-utilidades"></canvas></article>
-          <article class="chart-card"><h3>5. Composición financiera</h3><canvas id="chart-composicion"></canvas></article>
+          <article class="chart-card pie-card"><h3>5. Composición financiera</h3><canvas id="chart-composicion"></canvas></article>
           <article class="chart-card"><h3>6. Correlación ventas/utilidad</h3><canvas id="chart-scatter"></canvas></article>
           <article class="chart-card"><h3>7. Margen neto por período</h3><canvas id="chart-margen"></canvas></article>
           <article class="chart-card"><h3>8. Radar de promedios</h3><canvas id="chart-radar"></canvas></article>
