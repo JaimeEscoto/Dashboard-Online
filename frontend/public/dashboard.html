@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   </head>
   <body>
+    <button id="theme-toggle" type="button" class="btn-secondary theme-toggle" aria-label="Cambiar tema">🌙 Modo oscuro</button>
     <main class="container">
       <section class="card dashboard-shell">
         <div class="header-row">
@@ -30,42 +31,6 @@
             </label>
             <label>Mes
               <select id="filter-mes" multiple size="6"></select>
-            </label>
-            <label>Ventas mín.
-              <input id="filter-ventas-min" type="number" step="0.01" placeholder="Ej. 1000" />
-            </label>
-            <label>Ventas máx.
-              <input id="filter-ventas-max" type="number" step="0.01" placeholder="Ej. 50000" />
-            </label>
-            <label>Costo variable mín.
-              <input id="filter-cv-min" type="number" step="0.01" />
-            </label>
-            <label>Costo variable máx.
-              <input id="filter-cv-max" type="number" step="0.01" />
-            </label>
-            <label>Costo fijo mín.
-              <input id="filter-cf-min" type="number" step="0.01" />
-            </label>
-            <label>Costo fijo máx.
-              <input id="filter-cf-max" type="number" step="0.01" />
-            </label>
-            <label>Utilidad bruta mín.
-              <input id="filter-ub-min" type="number" step="0.01" />
-            </label>
-            <label>Utilidad bruta máx.
-              <input id="filter-ub-max" type="number" step="0.01" />
-            </label>
-            <label>Utilidad neta mín.
-              <input id="filter-un-min" type="number" step="0.01" />
-            </label>
-            <label>Utilidad neta máx.
-              <input id="filter-un-max" type="number" step="0.01" />
-            </label>
-            <label>Margen neto mín. (%)
-              <input id="filter-mn-min" type="number" step="0.01" />
-            </label>
-            <label>Margen neto máx. (%)
-              <input id="filter-mn-max" type="number" step="0.01" />
             </label>
           </div>
           <div class="filter-actions">
