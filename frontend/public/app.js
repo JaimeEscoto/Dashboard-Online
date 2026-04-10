@@ -1,4 +1,4 @@
-const API_BASE_URL = window.__API_BASE_URL__ || 'http://localhost:3000';
+const API_BASE_URL = window.__API_BASE_URL__ || 'https://dashboard-online-be.onrender.com';
 const TOKEN_KEY = 'sb_access_token';
 
 const authCard = document.getElementById('auth-card');
