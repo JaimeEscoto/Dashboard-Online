@@ -7,8 +7,6 @@ const clearFiltersBtn = document.getElementById('clear-filters-btn');
 const message = document.getElementById('dash-message');
 const subtitle = document.getElementById('dashboard-subtitle');
 const kpiGrid = document.getElementById('kpi-grid');
-const recordsBody = document.getElementById('records-body');
-const recordsMessage = document.getElementById('records-message');
 
 const money = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
@@ -54,12 +52,6 @@ function setMessage(text, isError = false) {
   message.textContent = text;
   message.classList.toggle('error', isError);
   message.classList.toggle('success', !isError && !!text);
-}
-
-function setRecordsMessage(text, isError = false) {
-  recordsMessage.textContent = text;
-  recordsMessage.classList.toggle('error', isError);
-  recordsMessage.classList.toggle('success', !isError && !!text);
 }
 
 function token() {
@@ -324,56 +316,6 @@ function renderDashboard(registros) {
   }));
 }
 
-function toMoney(value) {
-  return Number(value).toFixed(2);
-}
-
-function renderRegistros(registros) {
-  recordsBody.innerHTML = '';
-  if (!registros.length) {
-    recordsBody.innerHTML = '<tr><td colspan="9">No hay registros para los filtros seleccionados.</td></tr>';
-    return;
-  }
-
-  registros.forEach((registro) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td><input type="number" min="2000" max="2100" value="${registro.anio}" data-field="anio"></td>
-      <td><input type="number" min="1" max="12" value="${registro.mes}" data-field="mes"></td>
-      <td><input type="number" min="0" step="0.01" value="${toMoney(registro.ventas)}" data-field="ventas"></td>
-      <td><input type="number" min="0" step="0.01" value="${toMoney(registro.costo_variable)}" data-field="costo_variable"></td>
-      <td><input type="number" min="0" step="0.01" value="${toMoney(registro.utilidad_bruta)}" data-field="utilidad_bruta"></td>
-      <td><input type="number" min="0" step="0.01" value="${toMoney(registro.costo_fijo)}" data-field="costo_fijo"></td>
-      <td><input type="number" step="0.01" value="${toMoney(registro.utilidad_neta)}" data-field="utilidad_neta"></td>
-      <td><input type="number" min="0" max="100" step="0.01" value="${toMoney(registro.margen_neto)}" data-field="margen_neto"></td>
-      <td><button type="button" data-action="save">Guardar</button></td>
-    `;
-
-    row.querySelector('[data-action="save"]').addEventListener('click', async () => {
-      const body = {};
-      row.querySelectorAll('input').forEach((input) => {
-        body[input.dataset.field] = Number(input.value);
-      });
-
-      try {
-        await api(`/api/registros-base/${registro.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(body)
-        });
-        setRecordsMessage('Registro actualizado correctamente.');
-        const response = await api('/api/registros-base', { method: 'GET' });
-        sourceRegistros = response.registros || [];
-        populateFilterSelectors(sourceRegistros);
-        updateByFilters();
-      } catch (error) {
-        setRecordsMessage(error.message || 'No se pudo actualizar el registro.', true);
-      }
-    });
-
-    recordsBody.appendChild(row);
-  });
-}
-
 function populateFilterSelectors(registros) {
   const years = [...new Set(registros.map((r) => Number(r.anio)))].sort((a, b) => a - b);
   const months = [...new Set(registros.map((r) => Number(r.mes)))].sort((a, b) => a - b);
@@ -397,7 +339,6 @@ function populateFilterSelectors(registros) {
 
 function updateByFilters() {
   const filtered = filterData(sourceRegistros, readFilters());
-  renderRegistros(filtered);
 
   if (!filtered.length) {
     destroyCharts();
@@ -420,7 +361,6 @@ function clearFilters() {
     }
     el.value = '';
   });
-  setRecordsMessage('');
   updateByFilters();
 }
 
