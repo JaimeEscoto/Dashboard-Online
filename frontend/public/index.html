@@ -8,9 +8,9 @@
   </head>
   <body>
     <main class="container">
-      <section id="auth-card" class="card">
+      <section id="auth-card" class="card glass">
         <h1 id="auth-title">Iniciar sesión</h1>
-        <p id="auth-subtitle" class="muted">Accede a tu portal.</p>
+        <p id="auth-subtitle" class="muted">Accede a tu portal de inteligencia financiera.</p>
 
         <form id="auth-form" class="form">
           <label for="email">Correo</label>
@@ -28,10 +28,13 @@
       <section id="welcome-card" class="card hidden dashboard-card">
         <div class="header-row">
           <div>
-            <h1>Bienvenido</h1>
+            <h1>Panel Operativo</h1>
             <p id="welcome-text" class="muted"></p>
           </div>
-          <button id="logout-btn" type="button">Cerrar sesión</button>
+          <div class="header-actions">
+            <a class="btn-secondary" href="/dashboard.html">Ir a Dashboard</a>
+            <button id="logout-btn" type="button">Cerrar sesión</button>
+          </div>
         </div>
 
         <h2>Registros de la empresa</h2>

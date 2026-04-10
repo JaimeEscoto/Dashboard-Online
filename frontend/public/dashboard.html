@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Ejecutivo</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <main class="container">
+      <section class="card dashboard-shell">
+        <div class="header-row">
+          <div>
+            <h1>Dashboard Ejecutivo</h1>
+            <p id="dashboard-subtitle" class="muted">Análisis visual y desempeño financiero.</p>
+          </div>
+          <div class="header-actions">
+            <a class="btn-secondary" href="/index.html">Volver a Registros</a>
+            <button id="logout-btn" type="button">Cerrar sesión</button>
+          </div>
+        </div>
+
+        <p id="dash-message" class="message"></p>
+
+        <section id="kpi-grid" class="kpi-grid"></section>
+
+        <section class="charts-grid">
+          <article class="chart-card"><h3>1. Tendencia de ventas</h3><canvas id="chart-ventas"></canvas></article>
+          <article class="chart-card"><h3>2. Tendencia de utilidad neta</h3><canvas id="chart-utilidad-neta"></canvas></article>
+          <article class="chart-card"><h3>3. Ventas vs costos</h3><canvas id="chart-costos"></canvas></article>
+          <article class="chart-card"><h3>4. Utilidad bruta vs neta</h3><canvas id="chart-utilidades"></canvas></article>
+          <article class="chart-card"><h3>5. Composición financiera</h3><canvas id="chart-composicion"></canvas></article>
+          <article class="chart-card"><h3>6. Correlación ventas/utilidad</h3><canvas id="chart-scatter"></canvas></article>
+          <article class="chart-card"><h3>7. Margen neto por período</h3><canvas id="chart-margen"></canvas></article>
+          <article class="chart-card"><h3>8. Radar de promedios</h3><canvas id="chart-radar"></canvas></article>
+          <article class="chart-card"><h3>9. Top períodos por ventas</h3><canvas id="chart-top"></canvas></article>
+          <article class="chart-card"><h3>10. Participación anual de ventas</h3><canvas id="chart-anual"></canvas></article>
+        </section>
+      </section>
+    </main>
+
+    <script src="/config.js"></script>
+    <script type="module" src="/dashboard.js"></script>
+  </body>
+</html>
