@@ -40,6 +40,8 @@ Crea `backend/.env` basado en `backend/.env.example`:
 
 En `backend/sql/seed_users.sql` tienes un script para crear/actualizar usuarios de Supabase Auth.
 
+También tienes `backend/sql/supabase_login_setup.sql` con una plantilla para crear/actualizar un usuario con contraseña hasheada (bcrypt).
+
 Incluye por defecto:
 
 - email: `araujo@a.com`
@@ -74,7 +76,9 @@ Crea `frontend/.env` basado en `frontend/.env.example`.
 
 ### Configurar URL del backend
 
-En `frontend/public/app.js`, cambia `API_BASE_URL` si tu backend corre en otra URL (por ejemplo Render).
+El frontend toma `API_BASE_URL` desde `frontend/.env` (inyectado por `frontend/server.js`).
+
+Si no se define, usa por defecto: `https://dashboard-online-be.onrender.com`.
 
 ### Ejecutar frontend
 
@@ -100,4 +104,4 @@ Frontend en `http://localhost:5173`.
 - Build Command: `npm install`
 - Start Command: `npm start`
 
-Luego actualiza `API_BASE_URL` en `frontend/public/app.js` con la URL pública del backend en Render.
+Luego define `API_BASE_URL` en `frontend/.env` con la URL pública del backend en Render.
